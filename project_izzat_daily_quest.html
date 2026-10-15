@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Izzat — Daily Quest</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0b0b10;
+    color: #f4f1ea;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1050px; margin: auto; padding: 28px 18px 50px; }
+  header {
+    display: flex; justify-content: space-between; gap: 20px; align-items: center;
+    margin-bottom: 22px;
+  }
+  .eyebrow { color: #d6ad5b; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+  h1 { margin: 4px 0; font-size: clamp(28px, 5vw, 44px); }
+  .date { color: #aaa5ad; font-size: 14px; }
+  .hero {
+    background: linear-gradient(135deg, #19131b, #101018);
+    border: 1px solid #322837;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .stat {
+    background: #121219; border: 1px solid #292933; border-radius: 14px;
+    padding: 14px;
+  }
+  .stat small { color: #92909a; display:block; margin-bottom: 4px; }
+  .stat strong { font-size: 24px; }
+  .bar { height: 9px; background: #24242d; border-radius: 99px; overflow: hidden; margin-top: 14px; }
+  .fill { height: 100%; width: 0%; background: #d6ad5b; transition: .25s; }
+  .section-title { display:flex; justify-content:space-between; align-items:center; margin: 25px 0 10px; }
+  .section-title h2 { margin:0; font-size:18px; }
+  .section-title span { color:#8f8b94; font-size:13px; }
+  .quests { display:grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+  .quest {
+    display:flex; gap:14px; align-items:flex-start;
+    background:#121219; border:1px solid #292933; border-radius:16px;
+    padding:16px; transition:.2s;
+  }
+  .quest:hover { border-color:#4a3c4e; transform:translateY(-1px); }
+  .quest.done { opacity:.55; }
+  .quest.done .name { text-decoration: line-through; }
+  input[type=checkbox] {
+    appearance:none; width:25px; height:25px; min-width:25px;
+    border:2px solid #68636d; border-radius:8px; cursor:pointer;
+    position:relative; margin-top:1px;
+  }
+  input[type=checkbox]:checked { background:#d6ad5b; border-color:#d6ad5b; }
+  input[type=checkbox]:checked::after {
+    content:"✓"; color:#171218; font-weight:900; position:absolute; left:5px; top:0px;
+  }
+  .name { font-weight:700; font-size:16px; }
+  .desc { color:#99959d; font-size:13px; line-height:1.45; margin-top:4px; }
+  .xp { color:#d6ad5b; font-size:12px; font-weight:700; margin-top:7px; }
+  .tag {
+    display:inline-block; padding:3px 7px; border-radius:6px;
+    background:#211b24; color:#c7a86a; font-size:10px; margin-bottom:7px;
+  }
+  .bottom {
+    margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  button {
+    border:1px solid #39333d; background:#17171f; color:#eee; border-radius:10px;
+    padding:10px 13px; cursor:pointer;
+  }
+  button:hover { border-color:#d6ad5b; }
+  .danger { color:#e99b9b; }
+  .note {
+    margin-top:20px; color:#77737b; font-size:12px; line-height:1.5;
+  }
+  @media(max-width:700px) {
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .quests { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">PROJECT IZZAT</div>
+      <h1>Daily Quest ⚔️</h1>
+      <div class="date" id="date"></div>
+    </div>
+    <div style="text-align:right">
+      <div class="eyebrow">LEVEL</div>
+      <div style="font-size:30px;font-weight:800" id="level">1</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="stats">
+      <div class="stat"><small>Today's XP</small><strong id="xp">0</strong></div>
+      <div class="stat"><small>Progress</small><strong id="progress">0%</strong></div>
+      <div class="stat"><small>Quests</small><strong id="count">0/7</strong></div>
+      <div class="stat"><small>Streak</small><strong id="streak">0 🔥</strong></div>
+    </div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </section>
+
+  <div class="section-title"><h2>Today's Quests</h2><span id="message">Start your day.</span></div>
+  <div class="quests" id="quests"></div>
+
+  <div class="bottom">
+    <button onclick="newDay()">🌅 Start / Reset Today</button>
+    <button onclick="randomQuest()">🎲 Give Me a Random Quest</button>
+    <button class="danger" onclick="clearAll()">Reset Everything</button>
+  </div>
+
+  <div class="note">
+    Your progress is saved automatically in this browser. This is intentionally simple:
+    open the file whenever you want, tick a quest, and watch the dashboard change.
+  </div>
+</div>
+
+<script>
+const quests = [
+  {tag:"BODY", name:"Train the Body", desc:"Pull-up practice, push-ups, hangs, or a short workout. Just move.", xp:25},
+  {tag:"TECH", name:"AI / Python", desc:"Learn or practise one small thing related to AI, Python, data, or computer vision.", xp:25},
+  {tag:"中文", name:"Chinese Encounter", desc:"5–10 minutes. Learn words, listen to dialogue, or practise speaking.", xp:10},
+  {tag:"CREATIVE", name:"Make Something", desc:"Draw, animate, design a game idea, or create one small visual.", xp:25},
+  {tag:"CREATOR", name:"Creator Quest", desc:"Write hooks, edit a clip, research a product, or make one piece of content.", xp:25},
+  {tag:"LIFE", name:"One Useful Thing", desc:"Clean, organise, prepare something, finish a small task, or handle something you have been avoiding.", xp:10},
+  {tag:"BOSS", name:"Boss Fight", desc:"Do one thing you really did not feel like doing today.", xp:50}
+];
+
+const key = "projectIzzatDaily";
+const state = JSON.parse(localStorage.getItem(key) || '{"date":"","done":[],"totalXP":0,"streak":0}');
+const today = new Date().toISOString().slice(0,10);
+
+if (state.date !== today) {
+  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  state.streak = state.date === yesterday ? state.streak : 0;
+  state.date = today;
+  state.done = [];
+  localStorage.setItem(key, JSON.stringify(state));
+}
+
+document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, {
+  weekday:"long", year:"numeric", month:"long", day:"numeric"
+});
+
+function save(){ localStorage.setItem(key, JSON.stringify(state)); }
+
+function render(){
+  const box=document.getElementById("quests");
+  box.innerHTML="";
+  let xp=0;
+  quests.forEach((q,i)=>{
+    const done=state.done.includes(i);
+    if(done) xp+=q.xp;
+    const card=document.createElement("div");
+    card.className="quest"+(done?" done":"");
+    card.innerHTML=`
+      <input type="checkbox" ${done?"checked":""} aria-label="${q.name}">
+      <div>
+        <div class="tag">${q.tag}</div>
+        <div class="name">${q.name}</div>
+        <div class="desc">${q.desc}</div>
+        <div class="xp">+${q.xp} XP</div>
+      </div>`;
+    card.querySelector("input").addEventListener("change",()=>{
+      if(card.querySelector("input").checked){
+        if(!state.done.includes(i)) state.done.push(i);
+      } else {
+        state.done=state.done.filter(x=>x!==i);
+      }
+      if(state.done.length===quests.length) state.streak++;
+      save(); render();
+    });
+    box.appendChild(card);
+  });
+  const pct=Math.round(state.done.length/quests.length*100);
+  document.getElementById("xp").textContent=xp;
+  document.getElementById("progress").textContent=pct+"%";
+  document.getElementById("count").textContent=state.done.length+"/"+quests.length;
+  document.getElementById("fill").style.width=pct+"%";
+  document.getElementById("streak").textContent=state.streak+" 🔥";
+  document.getElementById("level").textContent=Math.max(1,Math.floor(state.totalXP/500)+1);
+  document.getElementById("message").textContent =
+    pct===100 ? "🏆 All quests cleared!" :
+    pct>=50 ? "You're getting there." :
+    pct===0 ? "Start with the easiest one." : "Keep going.";
+}
+
+function newDay(){
+  if(confirm("Start today from zero? Your current daily ticks will be cleared.")){
+    state.done=[]; state.date=today; save(); render();
+  }
+}
+function randomQuest(){
+  const remaining=quests.map((q,i)=>i).filter(i=>!state.done.includes(i));
+  if(!remaining.length){ alert("All quests are already complete. 🎉"); return; }
+  const i=remaining[Math.floor(Math.random()*remaining.length)];
+  alert("🎲 Random Quest:\n\n"+quests[i].name+"\n\n"+quests[i].desc);
+}
+function clearAll(){
+  if(confirm("Reset your saved progress and streak?")){
+    localStorage.removeItem(key); location.reload();
+  }
+}
+render();
+</script>
+</body>
+</html>
